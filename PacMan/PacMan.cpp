@@ -12,12 +12,15 @@ class Board {
 	int x, y;	// Original Height / Width
 	int uwidth, lwidth;		// Upper width / Lower width
 	int lheight, rheight;		// Left height / Right height
+	int lives;
+
 public:
-	Board(int x, int y) {
+	Board(int x, int y, int lives) {
 		this->x = x;
 		this->y = y;
+		this->lives = lives;
 		uwidth = 52; lwidth = y - 32; 
-		lheight = 7; rheight = x - 496;
+		lheight = 6; rheight = x - 496;
 		drawBoard();
 	}
 
@@ -35,6 +38,8 @@ public:
 
 		gotoxy(82, 1);										// Lives
 		cout << "Lives: ";
+		for (int i = 0; i < this->lives; i++)
+			cout << " # ";
 
 		drawMaze();
 		drawDotes();
@@ -81,7 +86,7 @@ class Player {
 	Board Board;
 
 public:
-	Player(int w, int h, int lives = 0, int speed = 2): Board(w, h) {
+	Player(int w, int h, int lives = 0, int speed = 2): Board(w, h, lives) {
 		this->lives = lives;
 		state = 0;
 		score = 0;
