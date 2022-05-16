@@ -86,6 +86,10 @@ public:
 		drawRectangle(x1, y1, x2, y2, 0, 0, 255);
 	}
 
+	void CreateObstacle(int dontcare) {
+		drawRectangle(x1, y1, x2, y2, 0, 0, 255, 0, 0, 255);
+	}
+
 	bool checkObstacle(int inc1, int inc2, int inc3, int inc4, int x, int y) {
 		if (x >= x1+inc1 && y >= y1+inc2 && x <= x2+inc3 && y <= y2+inc4)		// Obstacle Checl
 			return false;
@@ -156,8 +160,12 @@ public:
 		drawLine(x - 10, 50, x - 10, y - 10, 255);				// Right Border
 		drawLine(x - 11, 50, x - 11, y - 11, 255);
 
-		for (int i = 0; i < Obstacle::getObstacleCount(); i++)
+		for (int i = 0; i < Obstacle::getObstacleCount(); i++) {
+			if (i == 4 || i == 6 || i == 8 || i == 9)
+				O[i].CreateObstacle(0);
+			else
 			O[i].CreateObstacle();
+		}
 	}
 
 
