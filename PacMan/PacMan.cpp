@@ -69,19 +69,59 @@ public:
 	}
 };
 
+class Obstacle {
+	int x1, y1, x2, y2;
+	static int ObstacleCount;
+
+public:
+	Obstacle(int x1, int y1, int x2, int y2) {
+		this->x1 = x1;
+		this->y1 = y1;
+		this->x2 = x2;
+		this->y2 = y2;
+		ObstacleCount++;
+	}
+
+	void CreateObstacle() {
+		drawRectangle(x1, y1, x2, y2, 0, 0, 255);
+	}
+
+	bool checkObstacle(int inc1, int inc2, int inc3, int inc4, int x, int y) {
+		if (x >= x1+inc1 && y >= y1+inc2 && x <= x2+inc3 && y <= y2+inc4)		// Obstacle Checl
+			return false;
+		return true;
+	}
+
+	static int getObstacleCount() {
+		return ObstacleCount;
+	}
+};
+
+int Obstacle::ObstacleCount = 0;
+
 class Board {
 	int x, y;	// Original Height / Width
 	int uwidth, lwidth;		// Upper width / Lower width
 	int lheight, rheight;		// Left height / Right height
 	Player* CurrentPlayer;			// PacMan
 
+	Obstacle O[19];
+
 public:
-	Board(int x, int y, Player& P) {
+	Board(int x, int y, Player& P) 
+		: O{{279, 112, 426, 128}, {191,100,207,237}, {567, 149, 696, 166}, {762, 94, 777, 230},
+			{323, 326, 397, 399}, {343, 344, 377, 377}, {431, 325, 506, 399}, {449, 343, 488, 379},
+			{548, 324, 566, 400}, {567, 324, 617, 365}, {577, 333, 603, 354}, {761,305,775,404},
+			{666,389,760,404}, {158,303,172,402}, {173,387,267,402}, {451,180,465,280}, {406,224,512,239},
+			{70,91,82,420}, {881,88,893,416} }
+	
+	{
 		CurrentPlayer = &P;
 		this->x = x;
 		this->y = y;
 		uwidth = 52; lwidth = y - 32;
 		lheight = 6; rheight = x - 496;
+
 		drawBoard();
 	}
 
@@ -116,51 +156,16 @@ public:
 		drawLine(x - 10, 50, x - 10, y - 10, 255);				// Right Border
 		drawLine(x - 11, 50, x - 11, y - 11, 255);
 
-		drawRectangle(279, 112, 426, 128, 0, 0, 255);		// First Obstacle
-		drawRectangle(192, 130, 207, 236, 0, 0, 255);		// Second
-
-		drawRectangle(567, 149, 696, 166, 0, 0, 255);		// Third 
-
-		drawRectangle(762, 94, 777, 230, 0, 0, 255);		// Fourth
-
-		drawRectangle(323, 326, 397, 399, 0, 0, 255);		// "O"
-		drawRectangle(343, 344, 377, 377, 0, 0, 255);
-
-		drawRectangle(431, 325, 506, 399, 0, 0, 255);		// "O"
-		drawRectangle(449, 343, 488, 379, 0, 0, 255);
-
-		drawRectangle(548, 324, 566, 400, 0, 0, 255);		// "P
-		drawRectangle(567, 324, 617, 365, 0, 0, 255);
-		drawRectangle(577, 333, 603, 354, 0, 0, 255);
-		
+		for (int i = 0; i < Obstacle::getObstacleCount(); i++)
+			O[i].CreateObstacle();
 	}
 
+
 	bool checkObstacle(int x, int y) {
-
-		if (x >= 279 && y >= 112 && x <= 426 + 25 && y <= 128 + 25)		// First
-			return false;
-
-		if (x >= 191 && y >= 129 && x <= 208 + 25 && y <= 237 + 25)		// Second
-			return false;
-
-		if (x >= 567 && y >= 149 && x <= 696 + 25 && y <= 166 + 25)		// Third
-			return false;
-
-		if (x >= 762 - 2 && y >= 94 && x <= 777 + 25 && y <= 230 + 25)	// Fourth
-			return false;
-
-		if (x >= 323 && y >= 326 && x <= 397 + 25 && y <= 399 + 25)		// O
-			return false;
-
-		if (x >= 431 && y >= 325 && x <= 506 + 25 && y <= 399 + 25)		// O
-			return false;
-
-		if (x >= 548 && y >= 324 && x <= 566 + 25 && y <= 400 + 25)		// P Bar
-			return false;
-
-		if (x >= 567 && y >= 324 && x <= 617 + 25 && y <= 365 + 25)		// P Outline
-			return false;
-
+		for (int i = 0; i < Obstacle::getObstacleCount(); i++) {
+			if (!O[i].checkObstacle(0, 0, 25, 25, x, y))
+				return false;
+		}
 		return true;
 	}
 
