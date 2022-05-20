@@ -4,6 +4,8 @@
 using namespace std;
 
 int lives = 3;
+int game_state = 0;
+int w = 0, h = 0;
 
 void maximizeWindow() {
 	HWND hwnd = GetConsoleWindow();
@@ -54,8 +56,8 @@ public:
 		this->speed = speed;
 	}
 
-	void incScore() {
-		this->score++;
+	void incScore(int inc) {
+		this->score+=inc;
 	}
 
 	void updateState() {
@@ -90,12 +92,28 @@ public:
 		drawRectangle(x1, y1, x2, y2, 0, 0, 255);	// A function which would print hollow obstacle
 	}
 
+	void CreateGreenObstacle() {
+		drawRectangle(x1, y1, x2, y2, 0, 255, 0);	// A function which would print hollow obstacle
+	}
+
+	void CreateGreenObstacle(int dontcare) {
+		drawRectangle(x1, y1, x2, y2, 0, 255, 0, 0, 255, 0);	// A function which would print hollow obstacle
+	}
+
+	void CreateRedObstacle() {
+		drawRectangle(x1, y1, x2, y2, 255, 0, 0);	// A function which would print hollow obstacle
+	}
+
+	void CreateRedObstacle(int dontcare) {
+		drawRectangle(x1, y1, x2, y2, 255, 0, 0, 255, 0, 0);	// A function which would print hollow obstacle
+	}
+
 	void CreateObstacle(int dontcare) {						// A function which would print solid obstacle
 		drawRectangle(x1, y1, x2, y2, 0, 0, 255, 0, 0, 255);
 	}
 
 	bool checkObstacle(int inc1, int inc2, int inc3, int inc4, int x, int y) {
-		if (x >= x1+inc1 && y >= y1+inc2 && x <= x2+inc3 && y <= y2+inc4)		// Obstacle Checl
+		if (x >= x1+inc1 && y >= y1+inc2 && x <= x2+inc3 && y <= y2+inc4)		// Obstacle Check
 			return false;
 		return true;
 	}
@@ -116,23 +134,25 @@ class Board {
 
 public:
 	Board(int x, int y, Player& P) 
-		: O{{279, 112, 426, 128}, {191,100,207,237}, {567, 149, 696, 166}, {762, 94, 777, 230},
+		: O{ {279, 112, 426, 128}, {158,100,172,237}, {580, 149, 709, 166}, {762, 94, 777, 230},
 			{323, 326, 397, 399}, {343, 344, 377, 377}, {431, 325, 506, 399}, {449, 343, 488, 379},
 			{548, 324, 566, 400}, {567, 324, 617, 365}, {577, 333, 603, 354}, {761,305,775,404},
-			{666,389,760,404}, {158,303,172,402}, {173,387,267,402}, {451,180,465,280}, {406,224,512,239},
-			{70,91,82,420}, {881,88,893,416} }
+			{666,389,760,404}, {158,303,172,402}, {173,387,267,402}, {460,186,474,286}, {416,230,522,245},
+			{70,91,82,420}, {881,88,893,416} }			/* Coordinates of an obstacle, any obstacle can be passed and it would start working
+																		on its own without implementing anything */
 	
 	{
 		CurrentPlayer = &P;
 		this->x = x;
 		this->y = y;
-		uwidth = 52; lwidth = y - 32;
-		lheight = 6; rheight = x - 496;
+		uwidth = 52; lwidth = y - 39;
+		lheight = 6; rheight = x - 499;
 
 		for (int i = 0; i < 173; i++)
 			PacFood[i] = 1;		// 1 means that the food is yet to be eaten
 
 		drawBoard();
+		drawMaze();
 		drawDotes();
 	}
 
@@ -153,7 +173,6 @@ public:
 		for (int i = 0; i < CurrentPlayer->getLives(); i++)
 			cout << " # ";
 
-		drawMaze();
 	}
 
 	void drawMaze() {
@@ -204,29 +223,70 @@ public:
 		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
 			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30){
 				if (checkObstacle(2 * i + 4, j + 4)) {
-					if (x >= 2 * i && y >= j && x <= 2 * i + 4 + 25 && y <= j + 4 + 25 && PacFood[count] == 1) {
-						CurrentPlayer->incScore();
+					if (x >= 2 * i - 2 && y >= j - 2 && x <= 2 * i + 4 + 2 + 25 && y <= j + 4 + 2 + 25 && PacFood[count] == 1) {
+						CurrentPlayer->incScore(5);		// Increment of 5 in score per food eaten
 						drawRectangle(2 * i, j, 2 * i + 4, j + 4, 0, 0, 0, 0, 0, 0);
 						PacFood[count] = 0;
 					}
-					count++;
+					count++;	// Total would be 173 pieces of food
 				}
 			}
 		}
 	}
 
+	bool gameStateON() {
+		bool proceed = true;
+		for (int i = 0; i < 173; i++)
+			if (PacFood[i] != 0)
+				proceed = false;
+
+		if (proceed)
+			game_state = 1;
+
+		return proceed;
+	}
+
 	void drawDotes() {
 		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
 			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30) {
-				if (checkObstacle(2 * i + 4, j + 4)) {
-						drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
-				}
+				if (checkObstacle(2 * i + 4, j + 4))
+					drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
 			}
 		}
 	}
  };
 
 int Obstacle::ObstacleCount = 0;
+
+void victory() {
+	cls();
+	Obstacle* WIN = new Obstacle[15]{ {275,176,302,313}, {275,278,366,313}, {346,211,384,311}, {366,278,447,313},
+		{420,178,446,311}, {476,214,503,313}, {476,178,502,203}, {531,179,557,314}, {533,177,568,204}, {568,203,597,225},
+		{596,223,624,246}, {621,245,650,268}, {647,267,676,288}, {673,287,699,308}, {687,177,711,313} };
+
+	for (int i = 0; i < 15; i++)
+		if(i == 6)
+			WIN[i].CreateGreenObstacle(0);
+		else
+			WIN[i].CreateGreenObstacle();
+
+	delete[] WIN;
+}
+
+void defeat() {
+	cls();
+	Obstacle* LOOSE = new Obstacle[13]{ {215,179,239,315}, {239,294,294,315}, {309,211,411,307}, {327,231,393,288},
+	{527,201,438,222}, {438,221,458,249}, {438,237,526,260}, {502,255,526,308}, {509,308,438,286}, {558,200,580,314},
+	{560,199,643,225}, {559,244,632,268}, {644,314,559,290} };
+
+	for (int i = 0; i < 13; i++)
+		if (i == 3)
+			LOOSE[i].CreateRedObstacle(0);
+		else
+			LOOSE[i].CreateRedObstacle();
+
+	delete[] LOOSE;
+}
 
 bool checkCoordinates(int x, int y, Board B) {
 	if (y <= B.getUpperWidth() || x >= B.getRightHeight() || x <= B.getLeftHeight() || y >= B.getLowerWidth())
@@ -236,11 +296,7 @@ bool checkCoordinates(int x, int y, Board B) {
 
 int main() {
 
-	// Initialising
-	int w = 0, h = 0;
 	getWindowDimensions(w, h);
-	cout << w << " " << h << endl;
-
 	cls();
 	showConsoleCursor(false);
 
@@ -249,7 +305,7 @@ int main() {
 
 	// main event loop
 	int i = 59, j = 88;
-	while (true) {
+	do {
 
 		PacMan.drawPlayer(2 * i, j, 2 * i + 25, j + 25);
 		Board.drawBoard();
@@ -315,15 +371,21 @@ int main() {
 		}
 
 		Board.foodEatenChecker(2 * i + 25, j + 25);
-	}
+
+	} while (!Board.gameStateON() && game_state == 0);
 
 	// cleaning
 	drawLine(0, 5, w, 5, 0);
 	drawEllipse(w - 10, 0, w, 10, 0, 0, 0, 0, 0, 0);
 
-	cls();
-	showConsoleCursor(true);
+	if (game_state == 1)
+		victory();
 
+	else
+		defeat();
+
+	delay(500);
+	showConsoleCursor(true);
 	gotoxy(0, 0);
 
 	return 0;
