@@ -54,6 +54,10 @@ public:
 		this->speed = speed;
 	}
 
+	void incScore() {
+		this->score++;
+	}
+
 	void updateState() {
 		if (this->state == 0)
 			state = 1;
@@ -83,10 +87,10 @@ public:
 	}
 
 	void CreateObstacle() {
-		drawRectangle(x1, y1, x2, y2, 0, 0, 255);
+		drawRectangle(x1, y1, x2, y2, 0, 0, 255);	// A function which would print hollow obstacle
 	}
 
-	void CreateObstacle(int dontcare) {
+	void CreateObstacle(int dontcare) {						// A function which would print solid obstacle
 		drawRectangle(x1, y1, x2, y2, 0, 0, 255, 0, 0, 255);
 	}
 
@@ -101,13 +105,12 @@ public:
 	}
 };
 
-int Obstacle::ObstacleCount = 0;
-
 class Board {
-	int x, y;	// Original Height / Width
+	int x, y;			// Original Height / Width
 	int uwidth, lwidth;		// Upper width / Lower width
 	int lheight, rheight;		// Left height / Right height
 	Player* CurrentPlayer;			// PacMan
+	int PacFood[173];
 
 	Obstacle O[19];
 
@@ -126,7 +129,11 @@ public:
 		uwidth = 52; lwidth = y - 32;
 		lheight = 6; rheight = x - 496;
 
+		for (int i = 0; i < 173; i++)
+			PacFood[i] = 1;		// 1 means that the food is yet to be eaten
+
 		drawBoard();
+		drawDotes();
 	}
 
 	void drawBoard() {
@@ -147,7 +154,6 @@ public:
 			cout << " # ";
 
 		drawMaze();
-		drawDotes();
 	}
 
 	void drawMaze() {
@@ -193,9 +199,34 @@ public:
 		return lwidth;
 	}
 
-	void drawDotes() {}
-};
+	void foodEatenChecker(int x, int y) {
+		int count = 0;
+		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
+			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30){
+				if (checkObstacle(2 * i + 4, j + 4)) {
+					if (x >= 2 * i && y >= j && x <= 2 * i + 4 + 25 && y <= j + 4 + 25 && PacFood[count] == 1) {
+						CurrentPlayer->incScore();
+						drawRectangle(2 * i, j, 2 * i + 4, j + 4, 0, 0, 0, 0, 0, 0);
+						PacFood[count] = 0;
+					}
+					count++;
+				}
+			}
+		}
+	}
 
+	void drawDotes() {
+		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
+			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30) {
+				if (checkObstacle(2 * i + 4, j + 4)) {
+						drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
+				}
+			}
+		}
+	}
+ };
+
+int Obstacle::ObstacleCount = 0;
 
 bool checkCoordinates(int x, int y, Board B) {
 	if (y <= B.getUpperWidth() || x >= B.getRightHeight() || x <= B.getLeftHeight() || y >= B.getLowerWidth())
@@ -220,27 +251,31 @@ int main() {
 	int i = 59, j = 88;
 	while (true) {
 
-		Board.drawBoard();
 		PacMan.drawPlayer(2 * i, j, 2 * i + 25, j + 25);
+		Board.drawBoard();
 
 		if (PacMan.getTurn() == 'r') {
-			if (checkCoordinates(i + 1, j, Board) && Board.checkObstacle(2 * i + 25, j + 25))
+			if (checkCoordinates(i + 1, j, Board) && Board.checkObstacle(2 * i + 25 + 1, j + 25)) {
 				i++;
+			}
 		}
 
 		else if (PacMan.getTurn() == 'l') {
-			if (checkCoordinates(i - 1, j, Board) && Board.checkObstacle(2 * i + 25, j + 25))
+			if (checkCoordinates(i - 1, j, Board) && Board.checkObstacle(2 * i + 25 - 1, j + 25)) {
 				i--;
+			}
 		}
 
 		else if (PacMan.getTurn() == 'u') {
-			if (checkCoordinates(i, j + 1, Board) && Board.checkObstacle(2 * i + 25, j + 25))
+			if (checkCoordinates(i, j + 1, Board) && Board.checkObstacle(2 * i + 25, j + 25 + 1)) {
 				j++;
+			}
 		}
 
 		else if (PacMan.getTurn() == 'd') {
-			if (checkCoordinates(i, j - 1, Board) && Board.checkObstacle(2 * i + 25, j + 25))
+			if (checkCoordinates(i, j - 1, Board) && Board.checkObstacle(2 * i + 25, j + 25 - 1)) {
 				j--;
+			}
 		}
 
 		char c = getKey();
@@ -248,19 +283,14 @@ int main() {
 		if (c == 'q') break;
 
 		if (c == 'l' && checkCoordinates(i + PacMan.getSpeed(), j, Board)) {
-			if (Board.checkObstacle(2 * i + 25, j + 25)) {
+			if (Board.checkObstacle(2 * i + 25 + PacMan.getSpeed(), j + 25)) {
 				i += PacMan.getSpeed();
 				PacMan.setTurn('r');
 			}
-			else {
-				j += PacMan.getSpeed();
-				PacMan.setTurn('l');
-			}
-
 		}
 
 		if (c == 'j' && checkCoordinates(i - PacMan.getSpeed(), j, Board)) {
-			if (Board.checkObstacle(2 * i + 25, j + 25)) {
+			if (Board.checkObstacle(2 * i + 25 - PacMan.getSpeed(), j + 25)) {
 				i -= PacMan.getSpeed();
 				PacMan.setTurn('l');
 			}
@@ -270,18 +300,21 @@ int main() {
 			i = 6;
 
 		if (c == 'k' && checkCoordinates(i, j + PacMan.getSpeed(), Board)) {
-			if (Board.checkObstacle(2 * i + 25, j + 25)) {
+			if (Board.checkObstacle(2 * i + 25, j + 25 + PacMan.getSpeed())) {
 				j += PacMan.getSpeed();
 				PacMan.setTurn('u');
+
 			}
 		}
 
 		if (c == 'i' && checkCoordinates(i, j - PacMan.getSpeed(), Board)) {
-			if (Board.checkObstacle(2 * i + 25, j + 25)) {
+			if (Board.checkObstacle(2 * i + 25, j + 25 - PacMan.getSpeed())) {
 				j -= PacMan.getSpeed();
 				PacMan.setTurn('d');
 			}
 		}
+
+		Board.foodEatenChecker(2 * i + 25, j + 25);
 	}
 
 	// cleaning
