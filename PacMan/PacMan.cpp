@@ -105,25 +105,6 @@ public:
 		else
 			state = 0;
 	}
-
-	void drawPlayer(int x1, int y1, int x2, int y2) {
-
-		if (this->state == 1)
-			state_time_count++;
-
-		if (state_time_count >= interval) {
-			updateState();
-			state_time_count = 0;
-		}
-
-		if(state == 1)
-			drawEllipse(x1, y1, x2, y2, 0, 255, 255, 0, 255, 255);
-		else
-			drawEllipse(x1, y1, x2, y2, 245, 245, 0, 245, 245, 0);
-		delay(9);
-		drawEllipse(x1, y1, x2, y2, 0, 0, 0, 0, 0, 0);
-		return;
-	}
 };
 
 class Obstacle {
