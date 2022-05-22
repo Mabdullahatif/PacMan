@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <time.h>
+#include <math.h>
 #include <mygraphics.h>
 
 using namespace std;
@@ -361,7 +362,7 @@ class Enemy {
 	friend void initializerFunction(Player&, Enemy**);
 
 public:
-	Enemy(int& i, int& j, Board& Board) : x1(&i), y1(&j), B(&Board), exist(true), speed(4), chaseSpeed(2) { EnemyCount++; }
+	Enemy(int& i, int& j, Board& Board) : x1(&i), y1(&j), B(&Board), exist(true), speed(3), chaseSpeed(2) { EnemyCount++; }
 
 	int getX() {
 		return *x1;
