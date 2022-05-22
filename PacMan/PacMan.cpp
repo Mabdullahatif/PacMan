@@ -1,4 +1,6 @@
 #include <iostream>
+#include <cstdlib>
+#include <time.h>
 #include <mygraphics.h>
 
 using namespace std;
@@ -7,29 +9,66 @@ int lives = 3;
 int game_state = 0;
 int w = 0, h = 0;
 
-void maximizeWindow() {
-	HWND hwnd = GetConsoleWindow();
-	ShowWindow(hwnd, SW_SHOWMAXIMIZED);
-}
+class Board;
+class Enemy;
 
 class Player {
+	int* x,* y;
+
 	int state;		// Determines if Pacman is in ghost eat mode
 	int score;		// The score of the player by eating the dots
 	int lives;
 	char turn;		// Determines the axis in which the player is moving 
 	int speed;		// The speed of the player
 
+	int state_time_count;
+	int interval;		// Allocated time for Pacman to eat the ghost
+
+	friend void initializerFunction(Player&, Enemy**);
+
 public:
-	Player(int lives = 0, int speed = 2) {
+	Player(int& i, int& j, int lives = 0, int speed = 3) {
+		x = &i;
+		y = &j;
 		this->lives = lives;
 		state = 0;
 		score = 0;
 		turn = 'r';
 		this->speed = speed;
+		state_time_count = 0;
+		interval = 400;
 	}
 
 	int getLives() {
 		return lives;
+	}
+
+	int getInterval() {
+		return interval;
+	}
+
+	void decLives() {
+		this->lives--;
+	}
+
+	int getX() {
+		return *x;
+	}
+
+	int getY() {
+		return *y;
+	}
+
+	int getState_time_count() {
+		return state_time_count;
+	}
+
+	void incState_time_count() {
+		state_time_count++;
+	}
+
+	void resetState_time_count() {
+		state_time_count = 0;
 	}
 
 	int getScore() {
@@ -68,7 +107,19 @@ public:
 	}
 
 	void drawPlayer(int x1, int y1, int x2, int y2) {
-		drawEllipse(x1, y1, x2, y2, 245, 245, 0, 245, 245, 0);
+
+		if (this->state == 1)
+			state_time_count++;
+
+		if (state_time_count >= interval) {
+			updateState();
+			state_time_count = 0;
+		}
+
+		if(state == 1)
+			drawEllipse(x1, y1, x2, y2, 0, 255, 255, 0, 255, 255);
+		else
+			drawEllipse(x1, y1, x2, y2, 245, 245, 0, 245, 245, 0);
 		delay(9);
 		drawEllipse(x1, y1, x2, y2, 0, 0, 0, 0, 0, 0);
 		return;
@@ -133,14 +184,14 @@ class Board {
 	Obstacle O[19];
 
 public:
-	Board(int x, int y, Player& P) 
+	Board(int x, int y, Player& P)
 		: O{ {279, 112, 426, 128}, {158,100,172,237}, {580, 149, 709, 166}, {762, 94, 777, 230},
 			{323, 326, 397, 399}, {343, 344, 377, 377}, {431, 325, 506, 399}, {449, 343, 488, 379},
 			{548, 324, 566, 400}, {567, 324, 617, 365}, {577, 333, 603, 354}, {761,305,775,404},
 			{666,389,760,404}, {158,303,172,402}, {173,387,267,402}, {460,186,474,286}, {416,230,522,245},
 			{70,91,82,420}, {881,88,893,416} }			/* Coordinates of an obstacle, any obstacle can be passed and it would start working
 																		on its own without implementing anything */
-	
+
 	{
 		CurrentPlayer = &P;
 		this->x = x;
@@ -189,14 +240,22 @@ public:
 			if (i == 4 || i == 6 || i == 8 || i == 9)
 				O[i].CreateObstacle(0);
 			else
-			O[i].CreateObstacle();
+				O[i].CreateObstacle();
 		}
 	}
 
 
 	bool checkObstacle(int x, int y) {
 		for (int i = 0; i < Obstacle::getObstacleCount(); i++) {
-			if (!O[i].checkObstacle(0, 0, 25, 25, x, y))
+			if (!O[i].checkObstacle(-5, 0, 25, 25, x, y))
+				return false;
+		}
+		return true;
+	}
+
+	bool checkObstacle(int x, int y, int inc1, int inc2) {
+		for (int i = 0; i < Obstacle::getObstacleCount(); i++) {
+			if (!O[i].checkObstacle(inc1, 0, inc2, 25, x, y))
 				return false;
 		}
 		return true;
@@ -218,17 +277,56 @@ public:
 		return lwidth;
 	}
 
+	int getPlayerState() {
+		return CurrentPlayer->getState();
+	}
+
+	Player getCurrentPlayer() {
+		return *CurrentPlayer;
+	}
+
 	void foodEatenChecker(int x, int y) {
 		int count = 0;
 		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
-			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30){
+			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30) {
 				if (checkObstacle(2 * i + 4, j + 4)) {
-					if (x >= 2 * i - 2 && y >= j - 2 && x <= 2 * i + 4 + 2 + 25 && y <= j + 4 + 2 + 25 && PacFood[count] == 1) {
-						CurrentPlayer->incScore(5);		// Increment of 5 in score per food eaten
-						drawRectangle(2 * i, j, 2 * i + 4, j + 4, 0, 0, 0, 0, 0, 0);
-						PacFood[count] = 0;
+					if (PacFood[count] == 1) {
+						if ((2 * i == 920 && j == 62) || (2 * i == 20 && j == 62)) {
+							if (x >= 2 * i - 5 && y >= j - 2 && x <= 2 * i + 10 + 4 + 25 && y <= j + 10 + 2 + 25) {
+								drawEllipse(2 * i - 3, j, 2 * i + 10 - 2, j + 10, 0, 0, 0, 0, 0, 0);
+								if(CurrentPlayer->getState() == 0)
+									CurrentPlayer->updateState();
+							}
+						}
+
+						if (x >= 2 * i - 2 && y >= j - 2 && x <= 2 * i + 4 + 2 + 25 && y <= j + 4 + 2 + 25) {
+							CurrentPlayer->incScore(5);		// Increment of 5 in score per food eaten
+							drawRectangle(2 * i, j, 2 * i + 4, j + 4, 0, 0, 0, 0, 0, 0);
+							PacFood[count] = 0;
+						}
 					}
 					count++;	// Total would be 173 pieces of food
+				}
+			}
+		}
+	}
+
+	void redrawFood(int x, int y) {
+		int count = 0;
+		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
+			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30) {
+				if (checkObstacle(2 * i + 4, j + 4)) {
+					if (PacFood[count] == 1) {
+						if ((2 * i == 920 && j == 62) || (2 * i == 20 && j == 62)) {
+							if (x >= 2 * i - 5 && y >= j - 2 && x <= 2 * i + 10 + 4 + 25 && y <= j + 10 + 2 + 25)
+								drawEllipse(2 * i - 3, j, 2 * i + 10 - 2, j + 10, 255, 140, 0, 255, 140, 0);
+						}
+
+						else if (x >= 2 * i - 2 && y >= j - 2 && x <= 2 * i + 4 + 2 + 25 && y <= j + 4 + 2 + 25) {
+							drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
+						}
+					}
+					count++;
 				}
 			}
 		}
@@ -247,16 +345,267 @@ public:
 	}
 
 	void drawDotes() {
+		int count = 0;
 		for (int i = lheight + 4; i < rheight - lheight + 10; i += 30) {
 			for (int j = uwidth + 10; j < lwidth - uwidth + 67; j += 30) {
-				if (checkObstacle(2 * i + 4, j + 4))
-					drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
+				if (checkObstacle(2 * i + 4, j + 4)) {
+					if (PacFood[count] == 1) {
+						if((2 * i == 920 && j == 62) || (2 * i == 20 && j == 62))
+							drawEllipse(2 * i - 3, j, 2 * i + 10 - 2, j + 10, 255, 140, 0, 255, 140, 0);
+						else
+							drawRectangle(2 * i, j, 2 * i + 4, j + 4, 255, 255, 255, 255, 255, 255);
+					}
+					count++;
+				}
 			}
 		}
 	}
- };
+
+	bool checkCoordinates(int x, int y) {
+		if (y <= getUpperWidth() || x >= getRightHeight() || x <= getLeftHeight() || y >= getLowerWidth())
+			return false;
+		return true;
+	}
+};
+
+class Enemy {
+	int* x1, * y1;
+	int speed;
+	int chaseSpeed;
+	bool exist;
+	Board* B;
+
+	static int EnemyCount;
+
+	friend void initializerFunction(Player&, Enemy**);
+
+public:
+	Enemy(int& i, int& j, Board& Board) : x1(&i), y1(&j), B(&Board), exist(true), speed(4), chaseSpeed(2) { EnemyCount++; }
+
+	int getX() {
+		return *x1;
+	}
+
+	int getSpeed() {
+		return speed;
+	}
+
+	int getChaseSpeed() {
+		return chaseSpeed;
+	}
+
+	int getY() {
+		return *y1;
+	}
+
+	void setX(int x) {
+		*x1 = x;
+	}
+
+	static int getEnemyCount() {
+		return EnemyCount;
+	}
+
+	Board getB() {
+		return *B;
+	}
+
+	void noExistance() {
+		exist = false;
+	}
+
+	bool exists() {
+		if (exist)
+			return true;
+		else
+			return false;
+	}
+
+	void setY(int y) {
+		*y1 = y;
+	}
+
+
+	virtual void move() = 0;
+
+	void del() {
+		drawRectangle(2 * getX(), getY(), 2 * getX() + 25, getY() + 25, 0, 0, 0, 0, 0, 0);
+		B->redrawFood(2 * getX() + 25, getY() + 25);
+		noExistance();
+	}
+
+	int checkCaught(int x, int y) {
+		if (x >= 2 * (*x1) - 15 && y >= *y1 - 15 && x <= 2 * (*x1) + 25 + 15 && y <= *y1 + 25 + 15 && B->getPlayerState() != 1)
+			return 1;
+
+		else if (x >= 2 * (*x1) - 15 && y >= *y1 - 15 && x <= 2 * (*x1) + 25 + 15 && y <= *y1 + 25 + 15 && B->getPlayerState() == 1)
+			return 0;
+
+		return -1;
+	}
+};
+
+class Prowler : public Enemy {
+
+	int direction;
+	int interval;
+	int moveCount;
+
+public:
+	Prowler(int& x, int& y, Board& B) : Enemy(x, y, B) { direction = 0; interval = 5; moveCount = 0; }
+
+	void ghostAI() {
+		double a = sqrt((pow((double)(getX() - getChaseSpeed()) - (getB().getCurrentPlayer().getX()), 2)) + pow((double)getY() 
+			- getB().getCurrentPlayer().getY(), 2)); // LEFT
+
+		double b = sqrt((pow((double)(getX() + getChaseSpeed()) - (getB().getCurrentPlayer().getX()), 2)) + pow((double)getY()
+			- getB().getCurrentPlayer().getY(), 2)); // RIGHT
+
+		double c = sqrt((pow((double)(getX()) - (getB().getCurrentPlayer().getX()), 2)) + pow((double)(getY() - getChaseSpeed())
+			- getB().getCurrentPlayer().getY(), 2)); // UP
+
+		double d = sqrt((pow((double)(getX()) - (getB().getCurrentPlayer().getX()), 2)) + pow((double)(getY() + getChaseSpeed())
+			- getB().getCurrentPlayer().getY(), 2)); // DOWN
+
+		if (a < b && a <= c && a <= d && direction != 3) 
+			direction = 0;
+
+		else if (b <= c && b <= d && direction != 0) 
+			direction = 3;
+
+		else if (c < d && direction != 2) 
+			direction = 1;
+
+		else if (direction != 1) 
+			direction = 2;
+
+		else
+			direction = rand() % 4;	
+	}
+
+	void move() {
+		getB().redrawFood(2 * getX() + 25, getY() + 25);
+
+		if (moveCount >= interval) {
+			moveCount = 0;
+			ghostAI();
+		}
+
+		switch (direction)
+		{
+		case 1:
+			if (getB().checkCoordinates(getX(), getY() - getChaseSpeed()) && getB().checkObstacle(2 * getX() + 25, getY() + 25 - getChaseSpeed(), -5, 30))
+				setY(getY() - getChaseSpeed());
+			else
+				direction = rand() % 4;
+			break;
+		case 2:
+			if (getB().checkCoordinates(getX(), getY() + getChaseSpeed()) && getB().checkObstacle(2 * getX() + 25, getY() + 25 + getChaseSpeed(), -5, 30))
+				setY(getY() + getChaseSpeed());
+			else
+				direction = rand() % 4;
+			break;
+		case 0:
+			if (getB().checkCoordinates(getX() - getChaseSpeed(), getY()) && getB().checkObstacle(2 * getX() + 25 - getChaseSpeed(), getY() + 25, -5, 30))
+				setX(getX() - getChaseSpeed());
+			else
+				direction = rand() % 4;
+			break;
+		case 3:
+			if (getB().checkCoordinates(getX() + getChaseSpeed(), getY()) && getB().checkObstacle(2 * getX() + 25 + getChaseSpeed(), getY() + 25, -5, 30))
+				setX(getX() + getChaseSpeed());
+			else
+				direction = rand() % 4;
+			break;
+		}
+		moveCount++;
+	}
+};
+
+class randomChaser : public Enemy {
+
+	int turn;
+	int moveCount;
+	int interval;
+
+public:
+	randomChaser(int& x, int& y, Board& B) : Enemy(x, y, B) { turn = 0; moveCount = 0; interval = 200; }
+
+	void move() {
+		getB().redrawFood(2 * getX() + 25, getY() + 25);
+
+		moveCount++;
+
+		if (moveCount >= interval) {
+			moveCount = 0;
+			turn = rand() % 4;
+		}
+
+		switch (turn){
+		case 0:
+			if(getB().checkCoordinates(getX() - getSpeed(), getY()) && getB().checkObstacle(2 * getX() + 25 - getSpeed(), getY() + 25, -5, 30))
+				setX(getX() - getSpeed());
+			else
+				turn = rand() % 4;
+			break;
+		case 1:
+			if (getB().checkCoordinates(getX(), getY() - getSpeed()) && getB().checkObstacle(2 * getX() + 25, getY() + 25 - getSpeed(), -5, 30))
+				setY(getY() - getSpeed());
+			else
+				turn = rand() % 4;
+			break;
+		case 2:
+			if (getB().checkCoordinates(getX(), getY() + getSpeed()) && getB().checkObstacle(2 * getX() + 25, getY() + 25 + getSpeed(), -5, 30))
+				setY(getY() + getSpeed());
+			else
+				turn = rand() % 4;
+			break;
+		case 3:
+			if (getB().checkCoordinates(getX() + getSpeed(), getY()) && getB().checkObstacle(2 * getX() + 25 + getSpeed(), getY() + 25, -5, 30))
+				setX(getX() + getSpeed());
+			else
+				turn = rand() % 4;
+			break;
+		}
+	}
+};
+
+void initializerFunction(Player& P, Enemy** E) {
+
+	if (P.getState() == 1)
+		P.incState_time_count();
+
+	if (P.getState_time_count() >= P.getInterval()) {
+		P.updateState();
+		P.resetState_time_count();
+	}
+
+	if (P.getState() == 1)
+		drawEllipse(2 * P.getX(), P.getY(), 2 * P.getX() + 25, P.getY() + 25, 0, 255, 255, 0, 255, 255);
+	else
+		drawEllipse(2 * P.getX(), P.getY(), 2 * P.getX() + 25, P.getY() + 25, 245, 245, 0, 245, 245, 0);
+
+
+	if(E[0]->exists())
+		drawRectangle(2 * E[0]->getX(), E[0]->getY(), 2 * E[0]->getX() + 25, E[0]->getY() + 25, 255, 0, 0, 255, 0, 0);
+
+	if (E[1]->exists())
+		drawRectangle(2 * E[1]->getX(), E[1]->getY(), 2 * E[1]->getX() + 25, E[1]->getY() + 25, 255, 192, 203, 255, 192, 203);
+
+	delay(9);
+
+	drawEllipse(2 * P.getX(), P.getY(), 2 * P.getX() + 25, P.getY() + 25, 0, 0, 0, 0, 0, 0);
+
+	for (int i = 0; i < Enemy::getEnemyCount(); i++) {
+		if (E[i]->exists()) {
+			drawRectangle(2 * E[i]->getX(), E[i]->getY(), 2 * E[i]->getX() + 25, E[i]->getY() + 25, 0, 0, 0, 0, 0, 0);
+			E[i]->move();
+		}
+	}
+}
 
 int Obstacle::ObstacleCount = 0;
+int Enemy::EnemyCount = 0;
 
 void victory() {
 	cls();
@@ -288,49 +637,53 @@ void defeat() {
 	delete[] LOOSE;
 }
 
-bool checkCoordinates(int x, int y, Board B) {
-	if (y <= B.getUpperWidth() || x >= B.getRightHeight() || x <= B.getLeftHeight() || y >= B.getLowerWidth())
-		return false;
-	return true;
-}
-
 int main() {
 
+	srand(time(0));
 	getWindowDimensions(w, h);
 	cls();
 	showConsoleCursor(false);
 
-	Player PacMan(lives);		// Lives;
+	int i = 59, j = 88;
+	int ri = 205, rj = 200;
+	int pi = 305, pj = 200;
+
+	Player PacMan(i, j, lives);		// Lives;
+	Enemy** Enemies = new Enemy * [2];
+
 	Board Board(w, h, PacMan);
 
-	// main event loop
-	int i = 59, j = 88;
-	do {
+	Enemies[0] = new randomChaser(ri, rj, Board);
+	Enemies[1] = new Prowler(pi, pj, Board);
 
-		PacMan.drawPlayer(2 * i, j, 2 * i + 25, j + 25);
+	// main event loop
+
+	do {
+		initializerFunction(PacMan, Enemies);
+
 		Board.drawBoard();
 
 		if (PacMan.getTurn() == 'r') {
-			if (checkCoordinates(i + 1, j, Board) && Board.checkObstacle(2 * i + 25 + 1, j + 25)) {
-				i++;
+			if (Board.checkCoordinates(i + 2, j) && Board.checkObstacle(2 * i + 25 + 2, j + 25)) {
+				i+=2;
 			}
 		}
 
 		else if (PacMan.getTurn() == 'l') {
-			if (checkCoordinates(i - 1, j, Board) && Board.checkObstacle(2 * i + 25 - 1, j + 25)) {
-				i--;
+			if (Board.checkCoordinates(i - 2, j) && Board.checkObstacle(2 * i + 25 - 2, j + 25)) {
+				i-=2;
 			}
 		}
 
 		else if (PacMan.getTurn() == 'u') {
-			if (checkCoordinates(i, j + 1, Board) && Board.checkObstacle(2 * i + 25, j + 25 + 1)) {
-				j++;
+			if (Board.checkCoordinates(i, j + 2) && Board.checkObstacle(2 * i + 25, j + 25 + 2)) {
+				j+=2;
 			}
 		}
 
 		else if (PacMan.getTurn() == 'd') {
-			if (checkCoordinates(i, j - 1, Board) && Board.checkObstacle(2 * i + 25, j + 25 - 1)) {
-				j--;
+			if (Board.checkCoordinates(i, j - 2) && Board.checkObstacle(2 * i + 25, j + 25 - 2)) {
+				j-=2;
 			}
 		}
 
@@ -338,14 +691,14 @@ int main() {
 
 		if (c == 'q') break;
 
-		if (c == 'l' && checkCoordinates(i + PacMan.getSpeed(), j, Board)) {
+		if (c == 'l' && Board.checkCoordinates(i + PacMan.getSpeed(), j)) {
 			if (Board.checkObstacle(2 * i + 25 + PacMan.getSpeed(), j + 25)) {
 				i += PacMan.getSpeed();
 				PacMan.setTurn('r');
 			}
 		}
 
-		if (c == 'j' && checkCoordinates(i - PacMan.getSpeed(), j, Board)) {
+		if (c == 'j' && Board.checkCoordinates(i - PacMan.getSpeed(), j)) {
 			if (Board.checkObstacle(2 * i + 25 - PacMan.getSpeed(), j + 25)) {
 				i -= PacMan.getSpeed();
 				PacMan.setTurn('l');
@@ -355,7 +708,7 @@ int main() {
 		if (c == 's')
 			i = 6;
 
-		if (c == 'k' && checkCoordinates(i, j + PacMan.getSpeed(), Board)) {
+		if (c == 'k' && Board.checkCoordinates(i, j + PacMan.getSpeed())) {
 			if (Board.checkObstacle(2 * i + 25, j + 25 + PacMan.getSpeed())) {
 				j += PacMan.getSpeed();
 				PacMan.setTurn('u');
@@ -363,7 +716,7 @@ int main() {
 			}
 		}
 
-		if (c == 'i' && checkCoordinates(i, j - PacMan.getSpeed(), Board)) {
+		if (c == 'i' && Board.checkCoordinates(i, j - PacMan.getSpeed())) {
 			if (Board.checkObstacle(2 * i + 25, j + 25 - PacMan.getSpeed())) {
 				j -= PacMan.getSpeed();
 				PacMan.setTurn('d');
@@ -372,15 +725,54 @@ int main() {
 
 		Board.foodEatenChecker(2 * i + 25, j + 25);
 
+			if (Enemies[0]->exists()) {
+				if (Enemies[0]->checkCaught(2 * i + 25, j + 25) == 1) {
+					if (PacMan.getLives() <= 0)
+						game_state = 2;
+					else {
+						PacMan.decLives();
+						i = 59, j = 88;
+						cls();
+						Board.drawBoard();
+						Board.drawMaze();
+						Board.drawDotes();
+					}
+				}
+
+				else if (Enemies[0]->checkCaught(2 * i + 25, j + 25) == 0) {
+					Enemies[0]->del();
+				}
+			}
+
+			if (Enemies[1]->exists()) {
+				if (Enemies[1]->checkCaught(2 * i + 25, j + 25) == 1) {
+					if (PacMan.getLives() <= 0)
+						game_state = 2;
+					else {
+						PacMan.decLives();
+						i = 59, j = 88;
+						cls();
+						Board.drawBoard();
+						Board.drawMaze();
+						Board.drawDotes();
+					}
+				}
+
+				else if (Enemies[1]->checkCaught(2 * i + 25, j + 25) == 0) {
+					Enemies[1]->del();
+				}
+			}
+
 	} while (!Board.gameStateON() && game_state == 0);
 
 	// cleaning
+
+	delete[] Enemies;
 	drawLine(0, 5, w, 5, 0);
 	drawEllipse(w - 10, 0, w, 10, 0, 0, 0, 0, 0, 0);
 
 	if (game_state == 1)
 		victory();
-
 	else
 		defeat();
 
