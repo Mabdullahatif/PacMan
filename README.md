@@ -62,7 +62,7 @@ To run the game, you need a C++ compiler that supports the "mygraphics.h" librar
    - 'w' - Move up
    - 's' - Move down
    - 'q' - Quit the game
-   -'c' - Cheat Code for instant escape
+   - 'c'  - Cheat Code for instant escape
 
 ## Game Logic
 The main game loop is implemented in the `main` function, which controls the flow of the game. It uses classes for `Player`, `Board`, and `Enemy`, representing the main character, the game board, and the ghosts, respectively.
