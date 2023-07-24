@@ -44,10 +44,12 @@ The game takes place in a maze-like environment, where Pacman, the player's char
 ### Game Over
 The game ends under the following conditions:
 - **Win Condition**: The player wins the game when Pacman successfully eats all the dots in the maze, achieving a complete clear of the board.
-  ![pacman2](https://github.com/avcton/PacMan/assets/113658337/b0852acf-e5e8-434f-9969-c86a9805727f)
+  ![pacman3](https://github.com/avcton/PacMan/assets/113658337/82c92501-9c90-4ea5-88ff-2daf6139c749)
+
 
 - **Lose Condition**: The player loses the game when Pacman loses all of his lives by colliding with ghosts. Upon losing all lives, the player receives a game-over message, and the game can be restarted.
-  ![pacman3](https://github.com/avcton/PacMan/assets/113658337/c39d69d8-4eb6-4f0e-b0d0-5333e4b5e839)
+  ![pacman2](https://github.com/avcton/PacMan/assets/113658337/06217f60-fe99-40b7-a788-99a63a452424)
+
 
 
 ## Installation
