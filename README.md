@@ -38,16 +38,17 @@ The game takes place in a maze-like environment, where Pacman, the player's char
 - **Lives**: The player starts with a certain number of lives (usually three). If Pacman collides with a ghost, he loses a life. The game continues until the player runs out of lives.
 - **Score**: The player's score increases as Pacman eats dots. The objective is to achieve the highest score possible.
 - ### **Main Screen**
-  <img src="https://github.com/Mabdullahatif/test/assets/113658337/31840c85-14ec-43d3-998b-2d29df45be3a" alt="pacman1" width="600" height="400" />
+- ![pacman1](https://github.com/avcton/PacMan/assets/113658337/d2f8a22e-381e-4b14-bb17-aab69555b5d5)
 
 
 ### Game Over
 The game ends under the following conditions:
 - **Win Condition**: The player wins the game when Pacman successfully eats all the dots in the maze, achieving a complete clear of the board.
-  <img src="https://github.com/Mabdullahatif/test/assets/113658337/d1158bcd-7002-432f-8784-24a0f2b48bcb" alt="pacman3" width="600" height="400" />
+  ![pacman2](https://github.com/avcton/PacMan/assets/113658337/b0852acf-e5e8-434f-9969-c86a9805727f)
 
 - **Lose Condition**: The player loses the game when Pacman loses all of his lives by colliding with ghosts. Upon losing all lives, the player receives a game-over message, and the game can be restarted.
-  <img src="https://github.com/Mabdullahatif/test/assets/113658337/21643c1e-8acc-4ee3-81fa-f7afbf5e49c4" alt="pacman2" width="600" height="400" />
+  ![pacman3](https://github.com/avcton/PacMan/assets/113658337/c39d69d8-4eb6-4f0e-b0d0-5333e4b5e839)
+
 
 ## Installation
 To run the game, you need a C++ compiler that supports the "mygraphics.h" library.
