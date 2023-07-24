@@ -83,6 +83,6 @@ Contributions to this project are welcome! If you have any suggestions, bug fixe
 
 ## Initial Contributor
 
-So far, all the work in this repository is purely done by me and [Avcton](https://github.com/avcton)
+So far, all the work in this repository is purely done by me and [Avcton](https://github.com/Mabdullahatif)
 
 Happy gaming! 🎮
